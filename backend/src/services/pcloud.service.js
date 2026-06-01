@@ -12,7 +12,7 @@ export const uploadTextFile = async (folderid, fileName, content) => {
         const maxSizeInBytes = 10 * 1024 * 1024; // 10 MB
 
         if (sizeInBytes > maxSizeInBytes) {
-            throw new Error('Paste exceeds 10MB limit');
+            throw new Error('Content exceeds 10MB limit');
         }
 
         const buffer = Buffer.from(content, 'utf-8');
@@ -41,7 +41,6 @@ export const uploadTextFile = async (folderid, fileName, content) => {
         if (!response.ok) {
             throw new Error(`HTTP Error : Upload File : ${response.status}`);
         }
-        // console.log(await response.json());
         const jsonResponse = await response.json();
         console.log(jsonResponse);
         return jsonResponse["metadata"][0]["fileid"]
@@ -106,8 +105,7 @@ export const getTextFile = async (fileid) => {
             throw new Error(`HTTP Error : Fetch File Content : ${fileResponse.status}`);
         }
 
-        const fileContent = await fileResponse.text();
-        return fileContent;
+        return fileResponse.text();
     } catch (error) {
         throw new Error(`Failed to get file content: ${error.message}`);
     }

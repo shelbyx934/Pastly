@@ -7,7 +7,7 @@ const pasteSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
-    fileid: {
+    fileId: {
         type: Number,
         required: true
     },
