@@ -13,7 +13,11 @@ export const createPaste = async (content) => {
             throw new Error("Content exceeds 10MB limit");
         }
 
-        const slug = generateSlug();
+        let slug;
+        do {
+            slug = generateSlug();
+        } while (await Paste.exists({ slug }));
+
         const filename = `${slug}.txt`;
         const folderid = process.env.PASTE_FOLDER_ID;
         const fileId = await uploadTextFile(folderid, filename, content.trim());

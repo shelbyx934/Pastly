@@ -2,6 +2,7 @@ import express from 'express';
 import pasteRouter from './routes/paste.routes.js';
 import { mongoose } from 'mongoose';
 import dotenv from 'dotenv';
+import cleanupExpiredPastes from './jobs/cleanupExpiredPastes.js';
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ mongoose.connect('mongodb://localhost:27017/pastly')
     .catch((err) => {
         console.error('Error connecting to MongoDB:', err);
     });
+
+setInterval(cleanupExpiredPastes, 60 * 60 * 1000); // Runs every hour
 
 const app = express();
 app.use(express.json());
