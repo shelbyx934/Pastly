@@ -2,8 +2,5 @@ import { deleteTextFile, uploadTextFile, getTextFile } from "./src/services/pclo
 import dotenv from 'dotenv';
 import generateSlug from "./src/utils/generateSlug.js";
 
-
 dotenv.config({ path: "backend/.env" });
-
-const now = new Date();
-console.log(now.getTime());
+console.log('PCloud Auth Token:', process.env.PCLOUD_AUTH_TOKEN);

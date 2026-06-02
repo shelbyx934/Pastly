@@ -1,5 +1,3 @@
-import { openAsBlob } from 'node:fs';
-
 const BASE_URL = 'https://apitok2.pcloud.com';
 
 export const uploadTextFile = async (folderid, fileName, content) => {
@@ -73,11 +71,6 @@ export const deleteTextFile = async (fileid) => {
 };
 
 // get file content as text
-
-/*
-https://apitok2.pcloud.com/getfilelink?fileid=88637312590&forcedownload=1&auth=IkNbXVZhyjw7ZIxBHLLh5copNRv4wVj8YbhO85IFk
-create from it 
-*/
 
 export const getTextFile = async (fileid) => {
     try {

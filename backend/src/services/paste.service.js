@@ -1,6 +1,6 @@
-import { uploadTextFile, deleteTextFile, getTextFile } from "./pcloud.service";
-import generateSlug from "../utils/generateSlug";
-import Paste from "../models/Paste";
+import { uploadTextFile, deleteTextFile, getTextFile } from "./pcloud.service.js";
+import generateSlug from "../utils/generateSlug.js";
+import Paste from "../models/paste.model.js";
 
 export const createPaste = async (content) => {
     try {
@@ -25,7 +25,7 @@ export const createPaste = async (content) => {
         return `/p/${slug}`; // url to access the paste
     }
     catch (error) {
-        throw new Error(`Error : Create Paste : ${error.message}`);
+        throw new Error(`Error : Create Paste -> ${error.message}`);
     }
 };
 
@@ -45,13 +45,6 @@ export const getPaste = async (slug) => {
         return content;
     }
     catch (error) {
-        throw new Error(`Error : Get Paste : ${error.message}`);
+        throw new Error(`Error : Get Paste -> ${error.message}`);
     }
 };
-
-// export const deletePaste = async (slug) => {
-//     try {
-//         const paste = await Paste.findOne({ slug });
-//         if (!paste) {
-//             throw new Error("Paste not found");
-//         }

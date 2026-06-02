@@ -29,4 +29,6 @@ pasteSchema.index({
     expiresAt: 1
 });
 
-export const Paste = mongoose.model('Paste', pasteSchema);
+const Paste = mongoose.model('Paste', pasteSchema);
+
+export default Paste;
