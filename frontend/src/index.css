@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-bg: #f7f2eb;
+    --color-bg-elevated: #fffaf5;
+    --color-surface: rgba(255, 250, 245, 0.88);
+    --color-surface-muted: #f3e8f8;
+    --color-text: #5f6274;
+    --color-text-strong: #2d3148;
+    --color-text-soft: #777c96;
+    --color-border: rgba(149, 133, 193, 0.18);
+    --color-border-strong: rgba(133, 116, 197, 0.3);
+    --color-accent: #8b6cf9;
+    --color-accent-soft: rgba(139, 108, 249, 0.24);
+    --color-shadow: rgba(136, 102, 225, 0.28);
+    --color-overlay: rgba(245, 237, 231, 0.52);
+    --gradient-brand: linear-gradient(
+      135deg,
+      #ffb1b9 0%,
+      #aa7ef5 36%,
+      #5fded1 67%,
+      #79a7ff 100%
+    );
+    --gradient-brand-soft: linear-gradient(
+      135deg,
+      rgba(255, 177, 185, 0.56) 0%,
+      rgba(170, 126, 245, 0.46) 34%,
+      rgba(95, 222, 209, 0.4) 68%,
+      rgba(121, 167, 255, 0.5) 100%
+    );
+  }
+
+  :root.dark {
+    color-scheme: dark;
+    --color-bg: #090b18;
+    --color-bg-elevated: #101426;
+    --color-surface: rgba(15, 19, 36, 0.88);
+    --color-surface-muted: #181d36;
+    --color-text: #d9def0;
+    --color-text-strong: #f7f7ff;
+    --color-text-soft: #a4abc9;
+    --color-border: rgba(168, 145, 255, 0.16);
+    --color-border-strong: rgba(168, 145, 255, 0.32);
+    --color-accent: #a88fff;
+    --color-accent-soft: rgba(168, 143, 255, 0.22);
+    --color-shadow: rgba(66, 38, 154, 0.44);
+    --color-overlay: rgba(7, 9, 20, 0.48);
+    --gradient-brand: linear-gradient(
+      135deg,
+      #ff9eb2 0%,
+      #b68cff 34%,
+      #64ead5 67%,
+      #74a9ff 100%
+    );
+    --gradient-brand-soft: linear-gradient(
+      135deg,
+      rgba(255, 158, 178, 0.32) 0%,
+      rgba(182, 140, 255, 0.26) 36%,
+      rgba(100, 234, 213, 0.22) 68%,
+      rgba(116, 169, 255, 0.24) 100%
+    );
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(circle at top left, rgba(255, 177, 185, 0.16), transparent 32%),
+      radial-gradient(circle at top right, rgba(139, 108, 249, 0.14), transparent 34%),
+      radial-gradient(circle at 50% 100%, rgba(95, 222, 209, 0.14), transparent 30%);
+    color: var(--color-text);
+    font-family: "Inter", "Segoe UI", sans-serif;
+    transition:
+      background-color 220ms ease,
+      color 220ms ease,
+      background-image 220ms ease;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  *::selection {
+    background: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  }
+
+  button,
+  a,
+  textarea,
+  input,
+  svg,
+  header,
+  section,
+  article,
+  footer,
+  div {
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+}
