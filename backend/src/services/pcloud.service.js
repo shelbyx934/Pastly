@@ -1,3 +1,6 @@
+import FD from "form-data";
+import axios from 'axios';
+
 const BASE_URL = 'https://apitok2.pcloud.com';
 
 export const uploadTextFile = async (folderid, fileName, content) => {
@@ -37,13 +40,13 @@ export const uploadTextFile = async (folderid, fileName, content) => {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP Error : Upload File : ${response.status}`);
+            throw new Error(`HTTP Error : Upload Text File : ${response.status}`);
         }
         const jsonResponse = await response.json();
         console.log(jsonResponse);
         return jsonResponse["metadata"][0]["fileid"]
     } catch (error) {
-        throw new Error(`Failed to upload file: ${error.message}`);
+        throw new Error(`Failed to upload text file: ${error.message}`);
     }
 };
 
@@ -61,12 +64,12 @@ export const deleteTextFile = async (fileid) => {
             }
         });
         if (!response.ok) {
-            throw new Error(`HTTP Error : Delete File : ${response.status}`);
+            throw new Error(`HTTP Error : Delete Text File : ${response.status}`);
         }
         const jsonResponse = await response.json();
         return jsonResponse["metadata"]["isdeleted"]; // it is a boolean value
     } catch (error) {
-        throw new Error(`Failed to delete file: ${error.message}`);
+        throw new Error(`Failed to delete text file: ${error.message}`);
     }
 };
 
@@ -86,7 +89,7 @@ export const getTextFile = async (fileid) => {
             }
         });
         if (!response.ok) {
-            throw new Error(`HTTP Error : Get File Path : ${response.status}`);
+            throw new Error(`HTTP Error : Get Text File : ${response.status}`);
         }
 
         const jsonResponse = await response.json();
@@ -95,11 +98,49 @@ export const getTextFile = async (fileid) => {
         const downloadUrl = `https://${host}${filePath}`;
         const fileResponse = await fetch(downloadUrl);
         if (!fileResponse.ok) {
-            throw new Error(`HTTP Error : Fetch File Content : ${fileResponse.status}`);
+            throw new Error(`HTTP Error : Fetch Text File Content : ${fileResponse.status}`);
         }
 
         return fileResponse.text();
     } catch (error) {
-        throw new Error(`Failed to get file content: ${error.message}`);
+        throw new Error(`Failed to get text file content: ${error.message}`);
+    }
+};
+
+// These are methods for tranfer and uses streams.
+
+export const uploadFileStream = async (folderid, fileName, readStream) => {
+    try {
+        const formData = new FD();
+        formData.append('file', readStream, fileName);
+
+        const params = new URLSearchParams({
+            auth: process.env.PCLOUD_AUTH_TOKEN,
+            folderid: folderid,
+            nonpartial: 1,
+            overwrite: 0,
+            renameifexists: 0,
+            mtime: Math.floor(Date.now() / 1000),
+            progresshash: crypto.randomUUID(),
+            iconformat: 'id'
+        });
+
+        const response = await axios.post(
+            `${BASE_URL}/uploadfile?${params.toString()}`,
+            formData,
+            {
+                headers: {
+                    ...formData.getHeaders(),
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            }
+        );
+        return response.data.metadata[0].fileid;
+    } catch (error) {
+        console.error(error.cause);
+        console.error(error);
+        throw new Error(`Error : Upload File Stream : ${error.message}`);
     }
 };
