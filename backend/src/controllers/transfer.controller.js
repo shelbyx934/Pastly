@@ -16,8 +16,8 @@ export const createTransferController = async (req, res) => {
                 return res.status(400).json({ success: false, error: 'No file uploaded' });
             }
 
-            const url = await transferPromise;
-            res.status(201).json({ success: true, url });
+            const result = await transferPromise;
+            res.status(201).json({ success: true, ...result });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
         }

@@ -21,7 +21,11 @@ export const createTransfer = async (fileStream, originalFileName) => {
             fileName: originalFileName,
             expiresAt
         });
-        return `${process.env.FRONTEND_URL}/t/receive/${code}`;
+        return {
+            code,
+            url: `${process.env.FRONTEND_URL}/t/receive/${code}`,
+            expiresAt
+        };
     } catch (error) {
         throw new Error(`Create Transfer : ${error.message}`);
     }
