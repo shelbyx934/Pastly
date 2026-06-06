@@ -1,9 +1,7 @@
 import Busboy from 'busboy';
-import fs from 'fs';
-import { createTransfer } from '../services/transfer.service.js';
-import { uploadFileStream } from '../services/pcloud.service.js';
+import { createTransfer, receiveTransfer } from '../services/transfer.service.js';
 
-export const createTransferController = async (req, res) => {
+export const createTransferController = (req, res) => {
     const contentLength = req.headers['content-length'];
 
     if (!contentLength) {
@@ -48,6 +46,7 @@ export const createTransferController = async (req, res) => {
 
 export const receiveTransferController = async (req, res) => {
     const { code } = req.params;
+    console.log(`Received request to receive transfer with code: ${code}`);
     try {
         const url = await receiveTransfer(code);
         res.status(200).json({ success: true, url });

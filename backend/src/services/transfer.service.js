@@ -1,4 +1,4 @@
-import { uploadFileStream } from './pcloud.service.js';
+import { uploadFileStream, getFileDownloadLink } from './pcloud.service.js';
 import generateTransferCode from '../utils/generateTransferCode.js';
 import Transfer from '../models/transfer.model.js';
 
@@ -18,7 +18,7 @@ export const createTransfer = async (fileStream, originalFileName,sizeInBytes) =
         await Transfer.create({
             code,
             fileId,
-            fileName: storedFileName,
+            fileName: originalFileName,
             expiresAt
         });
         return {
@@ -46,7 +46,11 @@ export const receiveTransfer = async (code) => {
             throw new Error('Code has expired');
         }
 
-        return 
+        const downloadLink = await getFileDownloadLink(transfer);
+        transfer.isReceived = true;
+        await transfer.save();
+
+        return downloadLink;
     } catch (error) {
         throw new Error(`Receive File Error : ${error.message}`);
     }

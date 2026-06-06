@@ -4,6 +4,7 @@ import { mongoose } from 'mongoose';
 import dotenv from 'dotenv';
 import cleanupExpiredPastes from './jobs/cleanupExpiredPastes.js';
 import transferRouter from './routes/transfer.routes.js';
+import cleanupExpiredTransfers from './jobs/cleanupExpiredTransfers.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ mongoose.connect('mongodb://localhost:27017/pastly')
     });
 
 setInterval(cleanupExpiredPastes, 60 * 60 * 1000); // Runs every hour
+setInterval(cleanupExpiredTransfers, 10 * 60 * 1000); // Runs every 10 minutes
 
 const app = express();
 app.use(express.json());

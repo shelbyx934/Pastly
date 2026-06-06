@@ -1,5 +1,5 @@
 import Paste from '../models/paste.model.js';
-import { deleteTextFile } from '../services/pcloud.service.js';
+import { deleteFile } from '../services/pcloud.service.js';
 
 const cleanupExpiredPastes = async () => {
     try {
@@ -10,11 +10,11 @@ const cleanupExpiredPastes = async () => {
             return;
         }
         for (const paste of expiredPastes) {
-            await deleteTextFile(paste.fileId);
+            await deleteFile(paste.fileId);
             await paste.deleteOne();
         }
     } catch (error) {
-        console.error("Error occurred while cleaning up expired pastes:", error);
+        console.error("Error occurred while cleaning up expired pastes : ", error);
     }
 };
 

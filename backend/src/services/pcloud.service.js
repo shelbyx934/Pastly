@@ -50,7 +50,7 @@ export const uploadTextFile = async (folderid, fileName, content) => {
     }
 };
 
-export const deleteTextFile = async (fileid) => {
+export const deleteFile = async (fileid) => {
     try {
         const params = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
@@ -64,12 +64,12 @@ export const deleteTextFile = async (fileid) => {
             }
         });
         if (!response.ok) {
-            throw new Error(`HTTP Error : Delete Text File : ${response.status}`);
+            throw new Error(`HTTP Error : Delete File : ${response.status}`);
         }
         const jsonResponse = await response.json();
         return jsonResponse["metadata"]["isdeleted"]; // it is a boolean value
     } catch (error) {
-        throw new Error(`Failed to delete text file: ${error.message}`);
+        throw new Error(`Failed to delete file : ${error.message}`);
     }
 };
 
@@ -114,8 +114,6 @@ export const uploadFileStream = async (folderid, fileName, readStream, sizeInByt
         const formData = new FD();
         formData.append('file', readStream, fileName);
 
-        console.log(formData.sizeInBytes)
-
         const params = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
             folderid: folderid,
@@ -126,8 +124,6 @@ export const uploadFileStream = async (folderid, fileName, readStream, sizeInByt
             progresshash: crypto.randomUUID(),
             iconformat: 'id'
         });
-
-        console.log('Formdata headers : ', formData.getHeaders());
 
         const response = await axios.post(
             `${BASE_URL}/uploadfile?${params.toString()}`,
@@ -152,13 +148,8 @@ export const uploadFileStream = async (folderid, fileName, readStream, sizeInByt
 
 // get download link for a file
 
-export const getFileDownloadLink = async (code) => {
+export const getFileDownloadLink = async (fileData) => {
     try {
-        const fileData = await Transfer.findOne({ code });
-        if (!fileData) {
-            throw new Error('Code is invalid.');
-        }
-
         const params = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
             fileid: fileData.fileId,
@@ -177,14 +168,11 @@ export const getFileDownloadLink = async (code) => {
         const jsonResponse = await response.json();
         const host = jsonResponse["hosts"][0];
         const originalFilePath = jsonResponse["path"]
+        console.log(originalFilePath)
 
-        // sample download link : https://def2.pcloud.com/DLZwDw9ZeeoWXq7Zhyjw7Z7ZEHsP5kZ2ZZBuXZZ0ZvQZA7ZUMZLLcGHIjdvbQVeGlFm8cFL7N1Y6xX/tFp4E9Y.txt
-
-        // i want to replace the file name in the download link with the original file name, so that when user downloads the file, it will have the original file name instead of the stored file name in pcloud.
-
-        const downloadFilePath = originalFilePath.split('/')[0] + '/' + fileData.fileName;
-
-        return `https://${host}${downloadFilePath}`;
+        const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
+        
+        return `https://${host}/${downloadFilePath}`;
     } catch (error) {
         throw new Error(`Failed to get file download link: ${error.message}`);
     }
