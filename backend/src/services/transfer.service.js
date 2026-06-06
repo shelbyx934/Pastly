@@ -2,7 +2,7 @@ import { uploadFileStream } from './pcloud.service.js';
 import generateTransferCode from '../utils/generateTransferCode.js';
 import Transfer from '../models/transfer.model.js';
 
-export const createTransfer = async (fileStream, originalFileName) => {
+export const createTransfer = async (fileStream, originalFileName,sizeInBytes) => {
     try {
         const folderId = process.env.TRANSFER_FOLDER_ID;
 
@@ -13,12 +13,12 @@ export const createTransfer = async (fileStream, originalFileName) => {
 
         const storedFileName = `${code}_${originalFileName}`;
 
-        const fileId = await uploadFileStream(folderId, storedFileName, fileStream);
+        const fileId = await uploadFileStream(folderId, storedFileName, fileStream, sizeInBytes);
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // expires after 10 minutes
         await Transfer.create({
             code,
             fileId,
-            fileName: originalFileName,
+            fileName: storedFileName,
             expiresAt
         });
         return {
@@ -28,5 +28,26 @@ export const createTransfer = async (fileStream, originalFileName) => {
         };
     } catch (error) {
         throw new Error(`Create Transfer : ${error.message}`);
+    }
+};
+
+export const receiveTransfer = async (code) => {
+    try {
+        const transfer = await Transfer.findOne({ code });
+        if (!transfer) {
+            throw new Error('Code is invalid.');
+        }
+
+        if (transfer.isReceived) {
+            throw new Error('File has already been received');
+        }
+
+        if (new Date() > transfer.expiresAt) {
+            throw new Error('Code has expired');
+        }
+
+        return 
+    } catch (error) {
+        throw new Error(`Receive File Error : ${error.message}`);
     }
 };

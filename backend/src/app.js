@@ -3,6 +3,7 @@ import pasteRouter from './routes/paste.routes.js';
 import { mongoose } from 'mongoose';
 import dotenv from 'dotenv';
 import cleanupExpiredPastes from './jobs/cleanupExpiredPastes.js';
+import transferRouter from './routes/transfer.routes.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ setInterval(cleanupExpiredPastes, 60 * 60 * 1000); // Runs every hour
 const app = express();
 app.use(express.json());
 app.use('/api', pasteRouter);
+app.use('/api', transferRouter);
 
 app.listen(3000, () => {
     console.log('Server is live at : http://localhost:3000');

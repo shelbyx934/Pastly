@@ -23,7 +23,7 @@ export const uploadTextFile = async (folderid, fileName, content) => {
         const params = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
             folderid: folderid,
-            nonpartial: 1,
+            nopartial: 1,
             overwrite: 0,
             renameifexists: 0,
             mtime: Math.floor(Date.now() / 1000),
@@ -109,15 +109,17 @@ export const getTextFile = async (fileid) => {
 
 // These are methods for tranfer and uses streams.
 
-export const uploadFileStream = async (folderid, fileName, readStream) => {
+export const uploadFileStream = async (folderid, fileName, readStream, sizeInBytes) => {
     try {
         const formData = new FD();
         formData.append('file', readStream, fileName);
 
+        console.log(formData.sizeInBytes)
+
         const params = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
             folderid: folderid,
-            nonpartial: 1,
+            nopartial: 1,
             overwrite: 0,
             renameifexists: 0,
             mtime: Math.floor(Date.now() / 1000),
@@ -125,16 +127,19 @@ export const uploadFileStream = async (folderid, fileName, readStream) => {
             iconformat: 'id'
         });
 
+        console.log('Formdata headers : ', formData.getHeaders());
+
         const response = await axios.post(
             `${BASE_URL}/uploadfile?${params.toString()}`,
             formData,
             {
                 headers: {
                     ...formData.getHeaders(),
+                    'Content-Length': sizeInBytes,
                     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
                 },
                 maxBodyLength: Infinity,
-                maxContentLength: Infinity
+                timeout: 0
             }
         );
         return response.data.metadata[0].fileid;
@@ -142,5 +147,45 @@ export const uploadFileStream = async (folderid, fileName, readStream) => {
         console.error(error.cause);
         console.error(error);
         throw new Error(`Error : Upload File Stream : ${error.message}`);
+    }
+};
+
+// get download link for a file
+
+export const getFileDownloadLink = async (code) => {
+    try {
+        const fileData = await Transfer.findOne({ code });
+        if (!fileData) {
+            throw new Error('Code is invalid.');
+        }
+
+        const params = new URLSearchParams({
+            auth: process.env.PCLOUD_AUTH_TOKEN,
+            fileid: fileData.fileId,
+            forcedownload: 1
+        });
+        const response = await fetch(`${BASE_URL}/getfilelink?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP Error : Getting File Download Link : ${response.status}`);
+        }
+
+        const jsonResponse = await response.json();
+        const host = jsonResponse["hosts"][0];
+        const originalFilePath = jsonResponse["path"]
+
+        // sample download link : https://def2.pcloud.com/DLZwDw9ZeeoWXq7Zhyjw7Z7ZEHsP5kZ2ZZBuXZZ0ZvQZA7ZUMZLLcGHIjdvbQVeGlFm8cFL7N1Y6xX/tFp4E9Y.txt
+
+        // i want to replace the file name in the download link with the original file name, so that when user downloads the file, it will have the original file name instead of the stored file name in pcloud.
+
+        const downloadFilePath = originalFilePath.split('/')[0] + '/' + fileData.fileName;
+
+        return `https://${host}${downloadFilePath}`;
+    } catch (error) {
+        throw new Error(`Failed to get file download link: ${error.message}`);
     }
 };
