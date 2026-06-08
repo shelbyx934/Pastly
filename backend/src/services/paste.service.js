@@ -1,4 +1,4 @@
-import { uploadTextFile, deleteTextFile, getTextFile } from "./pcloud.service.js";
+import { uploadTextFile, getTextFile } from "./pcloud.service.js";
 import generateSlug from "../utils/generateSlug.js";
 import Paste from "../models/paste.model.js";
 
@@ -30,6 +30,7 @@ export const createPaste = async (content) => {
     }
     catch (error) {
         throw new Error(`Error : Create Paste -> ${error.message}`);
+        
     }
 };
 

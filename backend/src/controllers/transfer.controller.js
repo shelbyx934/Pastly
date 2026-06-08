@@ -1,5 +1,6 @@
 import Busboy from 'busboy';
 import { createTransfer, receiveTransfer } from '../services/transfer.service.js';
+import Transfer from '../models/transfer.model.js';
 
 export const createTransferController = (req, res) => {
     const contentLength = req.headers['content-length'];
@@ -52,5 +53,23 @@ export const receiveTransferController = async (req, res) => {
         res.status(200).json({ success: true, url });
     } catch (error) {
         res.status(400).json({ success: false, error: error.message });
+    }
+};
+
+export const getTransferStatusController = async (req, res) => {
+    const { code } = req.params;
+    try {
+        const transfer = await Transfer.findOne({ code }).select('isReceived fileName expiresAt');
+        if (!transfer) {
+            return res.status(404).json({ success: false, error: 'Transfer not found' });
+        }
+        res.status(200).json({
+            success: true,
+            isReceived: transfer.isReceived,
+            fileName: transfer.fileName,
+            expiresAt: transfer.expiresAt
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 };

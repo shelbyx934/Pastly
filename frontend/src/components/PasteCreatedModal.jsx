@@ -1,20 +1,14 @@
 import { Link } from "react-router-dom";
+import QRCode from "./QRCode";
 
-function PasteCreatedModal({
-  open,
-  pasteUrl,
-  onClose,
-  onCopy,
-  isCopied,
-}) {
-  if (!open || !pasteUrl) {
-    return null;
-  }
+function PasteCreatedModal({ open, pasteUrl, onClose, onCopy, isCopied }) {
+  if (!open || !pasteUrl) return null;
 
   const pastePath = new URL(pasteUrl).pathname;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 sm:px-6">
+      {/* Backdrop */}
       <button
         type="button"
         onClick={onClose}
@@ -26,28 +20,21 @@ function PasteCreatedModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="paste-created-title"
-        className="relative z-10 w-full max-w-md rounded-[32px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface)] p-6 shadow-[0_32px_90px_-38px_var(--color-shadow)]"
+        className="relative z-10 w-full max-w-lg animate-fade-in-up rounded-[32px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface)] p-6 shadow-[0_32px_90px_-38px_var(--color-shadow)]"
       >
+        {/* Close button */}
         <button
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-2 text-[color:var(--color-text-soft)] transition-all duration-200 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
           aria-label="Close dialog"
         >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 6 6 18M6 6l12 12" />
           </svg>
         </button>
 
+        {/* Header card */}
         <div className="rounded-3xl bg-[image:var(--gradient-brand-soft)] p-[1px]">
           <div className="rounded-[calc(1.5rem-1px)] bg-[color:var(--color-surface)] px-5 py-5">
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
@@ -60,18 +47,27 @@ function PasteCreatedModal({
               Your paste is ready to share
             </h2>
             <p className="mt-3 text-sm leading-7 text-[color:var(--color-text-soft)]">
-              Open the paste now or copy the URL and send it anywhere.
+              Open it now, copy the URL, or scan the QR code.
             </p>
-
+            {/* URL display */}
             <div className="mt-4 rounded-2xl border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-4 py-3">
-              <p className="truncate text-sm text-[color:var(--color-text-strong)]">
-                {pasteUrl}
-              </p>
+              <p className="truncate text-sm text-[color:var(--color-text-strong)]">{pasteUrl}</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {/* QR code section */}
+        <div className="mt-4 flex flex-col items-center gap-2 rounded-3xl border border-[color:var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_80%,transparent)] p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
+            Scan QR
+          </p>
+          <div className="rounded-2xl bg-[#fffaf5] p-2 dark:bg-[#f7f2eb]">
+            <QRCode value={pasteUrl} size={140} />
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <Link
             to={pastePath}
             onClick={onClose}
@@ -79,13 +75,21 @@ function PasteCreatedModal({
           >
             Open paste
           </Link>
-
           <button
             type="button"
             onClick={onCopy}
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-3 text-sm font-medium text-[color:var(--color-text-strong)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-bg-elevated)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-3 text-sm font-medium text-[color:var(--color-text-strong)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-bg-elevated)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
           >
-            {isCopied ? "Copied" : "Copy URL"}
+            {isCopied ? (
+              <>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              "Copy URL"
+            )}
           </button>
         </div>
       </div>
