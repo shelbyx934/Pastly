@@ -43,6 +43,7 @@ export const uploadTextFile = async (folderid, fileName, content) => {
             throw new Error(`HTTP Error : Upload Text File : ${response.status}`);
         }
         const jsonResponse = await response.json();
+        console.log(jsonResponse);
         return jsonResponse["metadata"][0]["fileid"]
     } catch (error) {
         throw new Error(`Failed to upload text file: ${error.message}`);
@@ -102,25 +103,16 @@ export const getTextFile = async (fileid) => {
 
         return fileResponse.text();
     } catch (error) {
-        throw new Error(`Failed to get text file content : ${error.message}`);
+        throw new Error(`Failed to get text file content: ${error.message}`);
     }
 };
 
-// These are methods for transfer and uses buffers.
+// These are methods for tranfer and uses streams.
 
-/**
- * Upload a file Buffer to pCloud.
- * @param {string} folderid  - pCloud folder ID
- * @param {string} fileName  - stored file name (prefixed with code)
- * @param {Buffer} fileBuffer - full file contents as a Node.js Buffer
- * @param {string} progressHash - UUID used to poll /uploadprogress during the upload
- * @returns {number} pCloud fileid
- */
-export const uploadFileStream = async (folderid, fileName, fileBuffer, progressHash) => {
+export const uploadFileStream = async (folderid, fileName, readStream, sizeInBytes) => {
     try {
         const formData = new FD();
-        // Append Buffer directly so form-data can compute Content-Length accurately
-        formData.append('file', fileBuffer, { filename: fileName, knownLength: fileBuffer.length });
+        formData.append('file', readStream, fileName);
 
         const params = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
@@ -129,7 +121,7 @@ export const uploadFileStream = async (folderid, fileName, fileBuffer, progressH
             overwrite: 0,
             renameifexists: 0,
             mtime: Math.floor(Date.now() / 1000),
-            progresshash: progressHash,
+            progresshash: crypto.randomUUID(),
             iconformat: 'id'
         });
 
@@ -139,6 +131,7 @@ export const uploadFileStream = async (folderid, fileName, fileBuffer, progressH
             {
                 headers: {
                     ...formData.getHeaders(),
+                    'Content-Length': sizeInBytes,
                     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
                 },
                 maxBodyLength: Infinity,
@@ -147,32 +140,9 @@ export const uploadFileStream = async (folderid, fileName, fileBuffer, progressH
         );
         return response.data.metadata[0].fileid;
     } catch (error) {
-        throw new Error(`Error uploading file stream : ${error.message}`);
-    }
-};
-
-/**
- * Poll pCloud's upload progress endpoint.
- * Returns an object like:
- *   { finished, result, total, uploaded, currentfile, currentfileuploaded, files }
- */
-export const getPCloudUploadProgress = async (progressHash) => {
-    try {
-        const params = new URLSearchParams({
-            progresshash: progressHash,
-            auth: process.env.PCLOUD_AUTH_TOKEN,
-        });
-        const response = await fetch(`${BASE_URL}/uploadprogress?${params.toString()}`, {
-            headers: {
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
-            }
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        throw new Error(`Failed to get upload progress: ${error.message}`);
+        console.error(error.cause);
+        console.error(error);
+        throw new Error(`Error : Upload File Stream : ${error.message}`);
     }
 };
 
@@ -204,6 +174,6 @@ export const getFileDownloadLink = async (fileData) => {
         
         return `https://${host}/${downloadFilePath}`;
     } catch (error) {
-        throw new Error(`Failed to get file download link : ${error.message}`);
+        throw new Error(`Failed to get file download link: ${error.message}`);
     }
 };
