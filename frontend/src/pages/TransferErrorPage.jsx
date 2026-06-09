@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { receiveTransferRequest } from "../lib/transferApi";
+import { Link, useSearchParams } from "react-router-dom";
 
 function getErrorMeta(errorMsg) {
   const msg = (errorMsg ?? "").toLowerCase();
-  if (msg.includes("not found") || msg.includes("does not exist") || msg.includes("invalid code")) {
+  if (msg.includes("not found") || msg.includes("does not exist") || msg.includes("invalid code") || msg.includes("invalid.")) {
     return {
       emoji: "🔍",
       title: "Transfer Not Found",
@@ -13,12 +11,12 @@ function getErrorMeta(errorMsg) {
       hint: "Double-check the code and try again, or ask the sender to create a new transfer.",
     };
   }
-  if (msg.includes("expir") || msg.includes("expired")) {
+  if (msg.includes("expir")) {
     return {
       emoji: "⏰",
       title: "Transfer Expired",
       description:
-        "This transfer has expired. Files are automatically deleted after 24 hours for security.",
+        "This transfer has expired. Files are automatically deleted after a short period for security.",
       hint: "Ask the sender to upload the file again and share a fresh code.",
     };
   }
@@ -39,72 +37,23 @@ function getErrorMeta(errorMsg) {
   };
 }
 
-function TransferReceiveByUrlPage() {
-  const { code } = useParams();
-  const [status, setStatus] = useState("loading"); // loading | error
-  const [error, setError] = useState("");
+function TransferErrorPage() {
+  const [params] = useSearchParams();
+  const message = params.get("message") ?? "";
+  const code = params.get("code") ?? "";
 
-  useEffect(() => {
-    if (!code) {
-      setError("No transfer code found in the URL.");
-      setStatus("error");
-      return;
-    }
-
-    receiveTransferRequest(code)
-      .then((data) => {
-        window.location.href = data.url;
-      })
-      .catch((err) => {
-        setError(err.message);
-        setStatus("error");
-      });
-  }, [code]);
-
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--color-bg)] px-4 text-[color:var(--color-text)]">
-        <div className="flex flex-col items-center gap-6 animate-fade-in">
-          {/* Spinner ring */}
-          <div className="relative h-20 w-20">
-            <div className="absolute inset-0 rounded-full bg-[image:var(--gradient-brand)] opacity-15" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg
-                className="h-12 w-12 animate-spin text-[color:var(--color-accent)]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-semibold text-[color:var(--color-text-strong)]">
-              Fetching your file…
-            </p>
-            <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-              Your download will start in a moment.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const { emoji, title, description, hint } = getErrorMeta(error);
+  const { emoji, title, description, hint } = getErrorMeta(message);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--color-bg)] px-4 text-[color:var(--color-text)]">
       <div className="w-full max-w-md animate-fade-in-up">
 
         {/* Error card */}
-        <div className="rounded-[32px] border border-rose-200/60 bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] p-8 shadow-[0_32px_80px_-44px_rgba(225,60,60,0.18)] dark:border-rose-900/30" role="alert">
-
+        <div
+          className="rounded-[32px] border border-rose-200/60 bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] p-8 shadow-[0_32px_80px_-44px_rgba(225,60,60,0.18)] dark:border-rose-900/30"
+          role="alert"
+          aria-labelledby="transfer-error-title"
+        >
           {/* Icon */}
           <div className="mb-5 flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-200/60 bg-rose-50 text-3xl shadow-inner dark:border-rose-900/40 dark:bg-rose-950/40">
@@ -113,7 +62,10 @@ function TransferReceiveByUrlPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-center text-2xl font-bold tracking-tight text-rose-700 dark:text-rose-300">
+          <h1
+            id="transfer-error-title"
+            className="text-center text-2xl font-bold tracking-tight text-rose-700 dark:text-rose-300"
+          >
             {title}
           </h1>
 
@@ -122,21 +74,31 @@ function TransferReceiveByUrlPage() {
             {description}
           </p>
 
-          {/* Hint box */}
+          {/* Hint */}
           <div className="mt-5 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-4 py-3">
             <p className="text-center text-xs leading-5 text-[color:var(--color-text-soft)]">
               💡 {hint}
             </p>
           </div>
 
-          {/* Raw error (technical detail) */}
-          {error && (
+          {/* Code badge */}
+          {code && (
+            <p className="mt-4 text-center font-mono text-xs text-[color:var(--color-text-soft)]">
+              Code tried:{" "}
+              <span className="rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-2 py-0.5 font-bold tracking-widest text-[color:var(--color-text-strong)]">
+                {code.toUpperCase()}
+              </span>
+            </p>
+          )}
+
+          {/* Technical detail */}
+          {message && (
             <details className="mt-4">
               <summary className="cursor-pointer text-center text-xs text-rose-500/70 hover:text-rose-500 dark:text-rose-400/60 dark:hover:text-rose-400">
                 View technical details
               </summary>
               <p className="mt-2 rounded-xl bg-rose-50 px-3 py-2 font-mono text-xs text-rose-600 dark:bg-rose-950/40 dark:text-rose-300">
-                {error}
+                {message}
               </p>
             </details>
           )}
@@ -157,7 +119,7 @@ function TransferReceiveByUrlPage() {
           </Link>
           <Link
             to="/transfer"
-            className="text-sm text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-strong)] focus-visible:outline-none transition-colors duration-150"
+            className="text-sm text-[color:var(--color-text-soft)] hover:text-[color:var(--color-text-strong)] transition-colors duration-150 focus-visible:outline-none"
           >
             ← Back to Transfer
           </Link>
@@ -167,4 +129,4 @@ function TransferReceiveByUrlPage() {
   );
 }
 
-export default TransferReceiveByUrlPage;
+export default TransferErrorPage;

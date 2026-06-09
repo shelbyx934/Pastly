@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { getTransferStatusRequest } from "../lib/transferApi";
 
-const POLL_INTERVAL = 5000; // 5 seconds
+const POLL_INTERVAL = 3000; // 3 seconds — faster response for sender
 
-function StatusPollBadge({ code, expiresAt }) {
+function StatusPollBadge({ code, expiresAt, onReceived }) {
   const [received, setReceived] = useState(false);
   const intervalRef = useRef(null);
 
@@ -16,6 +16,7 @@ function StatusPollBadge({ code, expiresAt }) {
         if (data.isReceived) {
           setReceived(true);
           clearInterval(intervalRef.current);
+          onReceived?.(); // notify parent immediately
         }
       } catch {
         // silent — stop polling on persistent error to avoid spam
@@ -44,7 +45,7 @@ function StatusPollBadge({ code, expiresAt }) {
     return (
       <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300 animate-fade-in">
         <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
-        Receiver opened the file
+        File received · Code expired
       </div>
     );
   }

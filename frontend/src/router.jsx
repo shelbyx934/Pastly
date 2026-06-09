@@ -6,6 +6,7 @@ import TransferPage from "./pages/TransferPage";
 import TransferSendPage from "./pages/TransferSendPage";
 import TransferReceivePage from "./pages/TransferReceivePage";
 import TransferReceiveByUrlPage from "./pages/TransferReceiveByUrlPage";
+import TransferErrorPage from "./pages/TransferErrorPage";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,11 @@ const router = createBrowserRouter([
     path: "/t/receive/:code",
     element: <TransferReceiveByUrlPage />,
   },
+  {
+    path: "/t/error",
+    element: <TransferErrorPage />,
+  },
 ]);
 
 export default router;
+

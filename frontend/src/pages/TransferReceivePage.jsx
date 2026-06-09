@@ -11,7 +11,7 @@ function TransferReceivePage() {
   const [toast, setToast] = useState({ open: false, title: "", message: "", variant: "info" });
 
   const normalizedCode = code.trim().toUpperCase();
-  const isReady = normalizedCode.length >= 3 && !isFetching;
+  const isReady = normalizedCode.length === 6 && !isFetching;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,16 +71,21 @@ function TransferReceivePage() {
                   type="text"
                   value={code}
                   onChange={(e) => {
-                    setCode(e.target.value.toUpperCase());
+                    const val = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6);
+                    setCode(val);
                     setError("");
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(e); }}
-                  placeholder="Enter code…"
+                  placeholder="6-character code"
                   autoComplete="off"
                   spellCheck={false}
+                  maxLength={6}
                   disabled={isFetching}
                   className="mt-2 w-full rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-4 py-3 text-center font-mono text-xl font-bold tracking-widest text-[color:var(--color-text-strong)] shadow-inner outline-none placeholder:text-[color:var(--color-text-soft)] placeholder:font-normal placeholder:tracking-normal focus:border-[color:var(--color-accent)] focus:ring-2 focus:ring-[color:var(--color-accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                 />
+                <p className="mt-1 text-right text-xs text-[color:var(--color-text-soft)]">
+                  {normalizedCode.length}/6 characters
+                </p>
               </div>
 
               {/* Error */}

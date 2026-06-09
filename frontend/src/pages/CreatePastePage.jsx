@@ -90,7 +90,17 @@ function CreatePastePage() {
   const handleCopy = async () => {
     if (!pasteUrl) return;
     try {
-      await navigator.clipboard.writeText(pasteUrl);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(pasteUrl);
+      } else {
+        const el = document.createElement("textarea");
+        el.value = pasteUrl;
+        el.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
       setIsCopied(true);
       setToast({ open: true, title: "Copied", message: "Paste URL copied to clipboard.", variant: "info" });
     } catch {

@@ -30,7 +30,17 @@ function ViewPastePage() {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(content);
+      } else {
+        const el = document.createElement("textarea");
+        el.value = content;
+        el.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+      }
       setToast({ open: true, title: "Copied", message: "Paste content copied to clipboard.", variant: "info" });
     } catch {
       setToast({ open: true, title: "Copy failed", message: "Clipboard access unavailable.", variant: "error" });

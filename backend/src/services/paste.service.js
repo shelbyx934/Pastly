@@ -29,8 +29,8 @@ export const createPaste = async (content) => {
         return `/p/${slug}`; // url to access the paste
     }
     catch (error) {
-        throw new Error(`Error : Create Paste -> ${error.message}`);
-        
+        throw new Error(`Error creating paste : ${error.message}`);
+
     }
 };
 
@@ -50,6 +50,6 @@ export const getPaste = async (slug) => {
         return content;
     }
     catch (error) {
-        throw new Error(`Error : Get Paste -> ${error.message}`);
+        throw new Error(`Error getting paste : ${error.message}`);
     }
 };

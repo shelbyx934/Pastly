@@ -13,7 +13,15 @@ function getErrorMessage(error, fallbackMessage) {
   return fallbackMessage;
 }
 
-/** Upload a file to the server, with upload progress callback */
+/**
+ * Phase 1 — Upload file to the Node server.
+ * The server buffers it and immediately returns 202 { jobId, code }.
+ * The actual pCloud upload happens in the background on the server.
+ *
+ * @param {File}     file
+ * @param {Function} onUploadProgress  axios ProgressEvent callback
+ * @returns {Promise<{ success, jobId, code }>}
+ */
 export async function createTransferRequest(file, onUploadProgress) {
   try {
     const formData = new FormData();
@@ -23,9 +31,29 @@ export async function createTransferRequest(file, onUploadProgress) {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress,
     });
-    return response.data; // { code, url, expiresAt }
+    return response.data; // { success, jobId, code }
   } catch (error) {
     throw new Error(getErrorMessage(error, "Unable to upload file."), {
+      cause: error,
+    });
+  }
+}
+
+/**
+ * Phase 2 — Poll the background job status.
+ * Returns one of:
+ *   { phase:'uploading', code, cloudUploaded, cloudTotal, cloudFinished, currentFile }
+ *   { phase:'done',      code, url, expiresAt }
+ *   { phase:'error',     error }
+ *
+ * @param {string} jobId
+ */
+export async function getTransferJobStatus(jobId) {
+  try {
+    const response = await api.get(`/transfer/job/${jobId}/status`);
+    return response.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, "Unable to fetch job status."), {
       cause: error,
     });
   }

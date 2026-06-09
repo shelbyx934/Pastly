@@ -12,19 +12,19 @@ function getRemaining(expiresAt) {
   return { minutes, seconds, totalSeconds };
 }
 
-function CountdownTimer({ expiresAt }) {
+function CountdownTimer({ expiresAt, forceExpired = false }) {
   const [remaining, setRemaining] = useState(() => getRemaining(expiresAt));
 
   useEffect(() => {
-    if (remaining.totalSeconds <= 0) return;
+    if (remaining.totalSeconds <= 0 || forceExpired) return;
     const id = setInterval(() => {
       setRemaining(getRemaining(expiresAt));
     }, 1000);
     return () => clearInterval(id);
-  }, [expiresAt, remaining.totalSeconds]);
+  }, [expiresAt, remaining.totalSeconds, forceExpired]);
 
-  const expired = remaining.totalSeconds === 0;
-  const isRed = remaining.totalSeconds <= 60;
+  const expired = forceExpired || remaining.totalSeconds === 0;
+  const isRed = expired || remaining.totalSeconds <= 60;
   const isAmber = !isRed && remaining.totalSeconds <= 180;
 
   const color = expired
@@ -60,3 +60,4 @@ function CountdownTimer({ expiresAt }) {
 }
 
 export default CountdownTimer;
+
