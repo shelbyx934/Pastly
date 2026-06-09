@@ -1,20 +1,17 @@
 import { Link } from "react-router-dom";
 
 function ServiceCard({ title, description, ctaLabel, to, disabled = false, badge, icon }) {
-  const sharedClasses =
-    "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-surface)]";
-
   return (
-    <article className="flex h-full flex-col rounded-3xl border border-[color:var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] p-6 shadow-[0_20px_48px_-30px_var(--color-shadow)] transition-all duration-300 hover:-translate-y-1 hover:border-[color:var(--color-border-strong)] hover:shadow-[0_28px_60px_-32px_var(--color-shadow)]">
+    <article className="group flex h-full flex-col rounded-3xl border border-[color:var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_90%,transparent)] p-7 shadow-[0_16px_48px_-28px_var(--color-shadow)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[color:var(--color-border-strong)] hover:shadow-[0_28px_64px_-28px_var(--color-shadow)]">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           {icon && (
-            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[image:var(--gradient-brand-soft)] border border-[color:var(--color-border)] text-[color:var(--color-accent)]">
+            <div className="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[image:var(--gradient-brand-soft)] border border-[color:var(--color-border-strong)] text-[color:var(--color-accent)] transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_24px_var(--color-accent-soft)]">
               {icon}
             </div>
           )}
           <div>
-            <h3 className="text-lg font-semibold tracking-tight text-[color:var(--color-text-strong)]">
+            <h3 className="text-lg font-bold tracking-tight text-[color:var(--color-text-strong)]">
               {title}
             </h3>
             <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
@@ -22,11 +19,11 @@ function ServiceCard({ title, description, ctaLabel, to, disabled = false, badge
             </p>
           </div>
         </div>
-        {badge ? (
+        {badge && (
           <span className="inline-flex shrink-0 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]">
             {badge}
           </span>
-        ) : null}
+        )}
       </div>
 
       <div className="mt-auto pt-4">
@@ -35,14 +32,14 @@ function ServiceCard({ title, description, ctaLabel, to, disabled = false, badge
             type="button"
             disabled
             aria-disabled="true"
-            className={`${sharedClasses} cursor-not-allowed border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-soft)] opacity-80`}
+            className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-2.5 text-sm font-medium text-[color:var(--color-text-soft)] opacity-70"
           >
             {ctaLabel}
           </button>
         ) : (
           <Link
             to={to}
-            className={`${sharedClasses} border border-transparent bg-[image:var(--gradient-brand)] text-white shadow-[0_18px_40px_-24px_var(--color-shadow)] hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_var(--color-shadow)]`}
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-brand)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_32px_-18px_var(--color-shadow)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-18px_var(--color-shadow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-surface)]"
           >
             {ctaLabel}
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
