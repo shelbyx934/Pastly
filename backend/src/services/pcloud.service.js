@@ -191,7 +191,7 @@ export const getPCloudUploadProgress = async (progressHash) => {
 //         const jsonResponse = await response.json();
 //         const host = jsonResponse["hosts"][0];
 //         const originalFilePath = jsonResponse["path"];
-        const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
+        // const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
 //         return `https://${host}/${downloadFilePath}`;
 //     } catch (error) {
 //         throw new Error(`Failed to get file download link: ${error.message}`);
