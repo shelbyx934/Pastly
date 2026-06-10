@@ -191,6 +191,7 @@ export const getFileDownloadLink = async (fileData) => {
 
         const jsonResponse = await response.json();
         const host = jsonResponse["hosts"][0];
+        console.log(jsonResponse);
         const originalFilePath = jsonResponse["path"]
 
         const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
