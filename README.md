@@ -72,7 +72,7 @@ Pastly/
 
 ### 1. Environment Configuration
 
-Create a `.env` file inside the `backend/` directory:
+#### Backend — `backend/.env`
 
 ```env
 PORT=3000
@@ -86,9 +86,24 @@ FRONTEND_URL=http://localhost:5173
 > [!TIP]
 > Retrieve folder IDs from the URL when viewing target folders in your pCloud web panel.
 
-### 2. Install Dependencies
+#### Frontend — `frontend/.env` (production only)
 
-You can install all dependencies from the root directory:
+```env
+VITE_API_BASE_URL=https://your-backend.railway.app
+```
+
+| Variable | Description |
+| :--- | :--- |
+| `VITE_API_BASE_URL` | The **origin** of your deployed backend (no trailing slash, no `/api`). The frontend automatically appends `/api` to all requests. Leave this unset in local development — Vite's dev-server proxy forwards `/api/*` to `http://localhost:3000` instead. |
+
+> [!IMPORTANT]
+> **Do not include `/api` in `VITE_API_BASE_URL`.** The frontend code always appends it automatically:
+> ```
+> baseURL = VITE_API_BASE_URL + "/api"
+> ```
+> So setting it to `https://your-backend.railway.app` will correctly produce requests to `https://your-backend.railway.app/api/paste`, `https://your-backend.railway.app/api/transfer`, etc.
+
+### 2. Install Dependencies
 
 ```bash
 # Install backend dependencies
@@ -109,6 +124,9 @@ npm run dev --prefix backend
 # Start Frontend (runs on http://localhost:5173)
 npm run dev --prefix frontend
 ```
+
+> [!NOTE]
+> In development, **do not set `VITE_API_BASE_URL`**. Vite's dev proxy (configured in `vite.config.js`) automatically forwards all `/api/*` requests to `http://localhost:3000`, so no extra configuration is needed.
 
 ---
 
