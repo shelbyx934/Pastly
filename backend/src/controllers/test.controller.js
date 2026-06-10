@@ -4,11 +4,9 @@
 
 // use native fetch in node 18+
 
-const BASE_URL = 'https://api.pcloud.com';
-
 export const testPCloudApi = async (req, res) => {
     try {
-        const response = await fetch(`${BASE_URL}/getapiserver`);
+        const response = await fetch('https://api.pcloud.com/getapiserver');
         const result = await response.json();
         res.json(result);
     } catch (error) {
