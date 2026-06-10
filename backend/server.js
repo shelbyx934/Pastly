@@ -5,8 +5,6 @@ import app from './src/app.js';
 import cleanupExpiredPastes from './src/jobs/cleanupExpiredPastes.js';
 import cleanupExpiredTransfers from './src/jobs/cleanupExpiredTransfers.js';
 
-
-
 dotenv.config();
 
 console.log('PCloud Auth Token:', process.env.PCLOUD_AUTH_TOKEN);

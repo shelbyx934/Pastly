@@ -179,6 +179,8 @@ export const getFileDownloadLink = async (fileData) => {
             fileid: fileData.fileId,
             forcedownload: 1
         });
+        // https://apitok2.pcloud.com/getfilelink?fileid=89048648230&forcedownload=1&auth=IkNbXVZhyjw7ZIxBHLLh5copNRv4wVj8YbhO85IFk
+        console.log(`${BASE_URL}/getfilelink?${params.toString()}`);
         const response = await fetch(`${BASE_URL}/getfilelink?${params.toString()}`, {
             method: 'GET',
             headers: {
