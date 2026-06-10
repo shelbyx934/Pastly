@@ -2,7 +2,7 @@ import FD from "form-data";
 import axios from 'axios';
 import crypto from 'crypto';
 
-const BASE_URL = 'https://apitok2.pcloud.com';
+const BASE_URL = 'https://api.pcloud.com';
 
 export const uploadTextFile = async (folderid, fileName, content) => {
     try {
@@ -59,7 +59,6 @@ export const deleteFile = async (fileid) => {
         const response = await fetch(`${BASE_URL}/deletefile?${params.toString()}`, {
             method: 'GET',
             headers: {
-                'host': 'apitok2.pcloud.com',
                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
             }
         });
