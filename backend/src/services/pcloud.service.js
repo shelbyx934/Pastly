@@ -44,7 +44,6 @@ export const uploadTextFile = async (folderid, fileName, content) => {
             throw new Error(`HTTP Error : Upload Text File : ${response.status}`);
         }
         const jsonResponse = await response.json();
-        console.log(jsonResponse);
         return jsonResponse["metadata"][0]["fileid"]
     } catch (error) {
         throw new Error(`Failed to upload text file: ${error.message}`);
@@ -193,7 +192,6 @@ export const getFileDownloadLink = async (fileData) => {
         const jsonResponse = await response.json();
         const host = jsonResponse["hosts"][0];
         const originalFilePath = jsonResponse["path"]
-        console.log(originalFilePath)
 
         const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
         

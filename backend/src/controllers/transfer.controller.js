@@ -50,7 +50,6 @@ export const createTransferController = (req, res) => {
 
 export const receiveTransferController = async (req, res) => {
     const { code } = req.params;
-    console.log(`Received request to receive transfer with code: ${code}`);
     try {
         const url = await receiveTransfer(code);
         res.status(200).json({ success: true, url });
