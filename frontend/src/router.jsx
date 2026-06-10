@@ -7,6 +7,7 @@ import TransferSendPage from "./pages/TransferSendPage";
 import TransferReceivePage from "./pages/TransferReceivePage";
 import TransferReceiveByUrlPage from "./pages/TransferReceiveByUrlPage";
 import TransferErrorPage from "./pages/TransferErrorPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
   {
     path: "/t/error",
     element: <TransferErrorPage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);
 

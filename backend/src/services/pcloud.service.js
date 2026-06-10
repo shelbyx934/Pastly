@@ -1,5 +1,6 @@
 import FD from "form-data";
 import axios from 'axios';
+import crypto from 'crypto';
 
 const BASE_URL = 'https://apitok2.pcloud.com';
 
@@ -67,7 +68,11 @@ export const deleteFile = async (fileid) => {
             throw new Error(`HTTP Error : Delete File : ${response.status}`);
         }
         const jsonResponse = await response.json();
-        return jsonResponse["metadata"]["isdeleted"]; // it is a boolean value
+        // pCloud returns result:0 on success; metadata.isdeleted may be absent
+        if (jsonResponse.result !== 0) {
+            throw new Error(`pCloud delete error code: ${jsonResponse.result}`);
+        }
+        return true;
     } catch (error) {
         throw new Error(`Failed to delete file : ${error.message}`);
     }
@@ -109,7 +114,7 @@ export const getTextFile = async (fileid) => {
 
 // These are methods for tranfer and uses streams.
 
-export const uploadFileStream = async (folderid, fileName, readStream, sizeInBytes) => {
+export const uploadFileStream = async (folderid, fileName, readStream, sizeInBytes, progressHash) => {
     try {
         const formData = new FD();
         formData.append('file', readStream, fileName);
@@ -121,7 +126,7 @@ export const uploadFileStream = async (folderid, fileName, readStream, sizeInByt
             overwrite: 0,
             renameifexists: 0,
             mtime: Math.floor(Date.now() / 1000),
-            progresshash: crypto.randomUUID(),
+            progresshash: progressHash || crypto.randomUUID(),
             iconformat: 'id'
         });
 
@@ -143,6 +148,26 @@ export const uploadFileStream = async (folderid, fileName, readStream, sizeInByt
         console.error(error.cause);
         console.error(error);
         throw new Error(`Error : Upload File Stream : ${error.message}`);
+    }
+};
+
+export const getPCloudUploadProgress = async (progressHash) => {
+    try {
+        const params = new URLSearchParams({
+            progresshash: progressHash,
+            auth: process.env.PCLOUD_AUTH_TOKEN,
+        });
+        const response = await fetch(`${BASE_URL}/uploadprogress?${params.toString()}`, {
+            headers: {
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        throw new Error(`Failed to get upload progress: ${error.message}`);
     }
 };
 

@@ -16,8 +16,12 @@ const cleanupExpiredTransfers = async () => {
         }
 
         for (const transfer of expiredTransfers) {
-            await deleteFile(transfer.fileId);
-            await transfer.deleteOne();
+            try {
+                await deleteFile(transfer.fileId);
+                await transfer.deleteOne();
+            } catch (err) {
+                console.error(`Failed to delete transfer ${transfer._id} (fileId: ${transfer.fileId}):`, err.message);
+            }
         }
     } catch (error) {
         console.error("Error occurred while cleaning up expired transfers : ", error);

@@ -14,24 +14,28 @@ function getErrorMessage(error, fallbackMessage) {
 }
 
 /**
- * Phase 1 — Upload file to the Node server.
- * The server buffers it and immediately returns 202 { jobId, code }.
- * The actual pCloud upload happens in the background on the server.
+ * Upload file to the Node server with streaming to pCloud.
  *
  * @param {File}     file
+ * @param {string}   progressHash
  * @param {Function} onUploadProgress  axios ProgressEvent callback
- * @returns {Promise<{ success, jobId, code }>}
+ * @param {AbortSignal} [signal]       optional AbortController signal for cancellation
+ * @returns {Promise<{ success, code, url, expiresAt }>}
  */
-export async function createTransferRequest(file, onUploadProgress) {
+export async function createTransferRequest(file, progressHash, onUploadProgress, signal) {
   try {
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await api.post("/transfer", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: { 
+        "Content-Type": "multipart/form-data",
+        "X-Progress-Hash": progressHash
+      },
       onUploadProgress,
+      signal,
     });
-    return response.data; // { success, jobId, code }
+    return response.data; // { success, code, url, expiresAt }
   } catch (error) {
     throw new Error(getErrorMessage(error, "Unable to upload file."), {
       cause: error,
@@ -40,20 +44,16 @@ export async function createTransferRequest(file, onUploadProgress) {
 }
 
 /**
- * Phase 2 — Poll the background job status.
- * Returns one of:
- *   { phase:'uploading', code, cloudUploaded, cloudTotal, cloudFinished, currentFile }
- *   { phase:'done',      code, url, expiresAt }
- *   { phase:'error',     error }
+ * Poll the pCloud upload progress by hash.
  *
- * @param {string} jobId
+ * @param {string} progressHash
  */
-export async function getTransferJobStatus(jobId) {
+export async function getTransferProgressStatus(progressHash) {
   try {
-    const response = await api.get(`/transfer/job/${jobId}/status`);
+    const response = await api.get(`/transfer/progress/${progressHash}`);
     return response.data;
   } catch (error) {
-    throw new Error(getErrorMessage(error, "Unable to fetch job status."), {
+    throw new Error(getErrorMessage(error, "Unable to fetch progress status."), {
       cause: error,
     });
   }

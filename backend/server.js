@@ -1,11 +1,9 @@
 // server.js
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-
-import app from './app.js';
-
-import cleanupExpiredPastes from './jobs/cleanupExpiredPastes.js';
-import cleanupExpiredTransfers from './jobs/cleanupExpiredTransfers.js';
+import app from './src/app.js';
+import cleanupExpiredPastes from './src/jobs/cleanupExpiredPastes.js';
+import cleanupExpiredTransfers from './src/jobs/cleanupExpiredTransfers.js';
 
 dotenv.config();
 
@@ -19,8 +17,8 @@ mongoose.connect(MONGODB_URI)
     console.log('Connected to MongoDB');
 
     // Start cleanup jobs
-    setInterval(cleanupExpiredPastes, 60 * 60 * 1000); // every hour
-    setInterval(cleanupExpiredTransfers, 10 * 60 * 1000); // every 10 mins
+    setInterval(cleanupExpiredPastes, 7.5 * 60 * 1000); // every 7.5 mins
+    setInterval(cleanupExpiredTransfers, 7.5 * 60 * 1000); // every 7.5 mins
 
     const PORT = process.env.PORT || 3000;
 

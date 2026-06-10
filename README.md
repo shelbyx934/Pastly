@@ -1,64 +1,139 @@
 # 🚀 Pastly
 
-Pastly is a modern MERN stack application designed for fast, seamless pasting of text/code and peer-to-peer file transfers. It leverages high-performance streaming to transfer files directly to cloud storage without overloading the server.
+<div align="center">
+  <p align="center">
+    <strong>A high-performance, zero-buffering file transfer and paste-sharing platform.</strong>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+    <img src="https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
+    <img src="https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  </p>
+</div>
+
+---
+
+## 🌟 Introduction
+
+**Pastly** is a modern MERN stack application designed for lighting-fast text/code pasting and secure, transient peer-to-peer file transfers. 
+
+Unlike typical file-sharing tools that buffer entire uploads to local server disk storage before uploading them to the cloud (creating massive RAM/disk footprints and slowing down transfers), Pastly implements a **direct streaming pipeline**. Files are parsed on the fly by Express using `busboy` and instantly piped straight to the **pCloud API**. The backend acts as a lightweight, stateless conduit with a near-zero memory footprint.
 
 ---
 
 ## ✨ Features
 
-- **Pastes**: Easily share formatted code or plain text with customizable expiration times.
-- **File Transfers**: Upload files and share them via an auto-expiring secure link or code.
-- **Real-Time Progress**: Interactive upload progress tracked directly from the cloud upload queue.
-- **Automatic Cleanup**: Background cron jobs automatically clean up expired pastes and transfers.
+- **⚡ Fast Code Pastes**: Share formatted code or plain text instantly upto 10MB and simple click-to-copy with a short link.
+- **📦 Zero-Disk File Transfers**: Securely transfer files up to 1GB. Uploads stream straight through Node to pCloud without ever touching the server's hard drive.
+- **🔄 Real-time Cloud Progress**: Rather than relying on simple browser-side upload calculations, Pastly polls pCloud's actual server-side progress endpoint, providing true, accurate progress states.
+- **🛡️ Single-Redeem Verification**: File transfers are single-use. The code is checked dynamically on first load, prompting the receiver with a confirmation screen before redeeming the link and marking the transfer as downloaded.
+- **⏳ Automatic Cleanup**: Scheduled background cron tasks run every 7.5 minutes to clean up expired pastes, redeemed transfers, and delete associated cloud storage assets.
+- **🎨 Modern UX/UI**: Elegant glassmorphism interface with custom dark/light theme options, file drop zone micro-animations, keyboard shortcuts (`Ctrl + Enter` to upload, `Escape` to cancel), and quick manual/URL download mechanisms.
 
 ---
 
-## 🛠️ Technology Stack
+## 📁 Repository Structure
 
-### 💻 Frontend
-- **React (Vite)**: A fast, reactive client interface.
-- **TailwindCSS**: Sleek, modern styling with clean transitions and animations.
-- **State & Routing**: React Router for client-side routing, and native hooks for responsive UI states.
-
-### ⚙️ Backend
-- **Node.js & Express**: High-performance REST APIs.
-- **MongoDB & Mongoose**: Flexible schema design for storing paste metadata and transfer job states.
-- **Stream-based Processing**: Parses file uploads on the fly with **Busboy**, feeding data directly into cloud streams.
+```text
+Pastly/
+├── backend/                   # Node.js + Express API
+│   ├── src/
+│   │   ├── controllers/      # Route logic (paste, transfer)
+│   │   ├── jobs/             # Scheduled cleanups (expired transfers/pastes)
+│   │   ├── models/           # Mongoose Schemas (paste, transfer)
+│   │   ├── routes/           # Express Route definitions
+│   │   ├── services/         # Business logic (pCloud API integration, streams)
+│   │   └── utils/            # Helper generators (slugs, transfer codes)
+│   ├── server.js             # Server entrypoint & DB connection
+│   └── package.json
+├── frontend/                  # React Application
+│   ├── src/
+│   │   ├── components/       # Reusable components (Navbar, DropZone, etc.)
+│   │   ├── pages/            # Page layouts (Landing, Send, Receive, NotFound)
+│   │   ├── lib/              # Axios request APIs
+│   │   ├── router.jsx        # Routing configuration
+│   │   ├── index.css         # Styling system & theme custom tokens
+│   │   └── main.jsx          # Frontend entrypoint
+│   └── package.json
+```
 
 ---
 
-## ⚡ Core Concepts & Architecture
+## 🛠️ Installation & Setup
 
-### 🔄 Stream-Based File Uploads
-Instead of downloading files onto the server's disk first (which consumes RAM and storage), Pastly uses **Node.js streams**:
-1. Incoming multi-part requests are parsed reactively using `busboy`.
-2. As chunks arrive, they are piped directly to the **pCloud API**.
-3. This creates a low-memory footprint, allowing the backend to scale effortlessly even with large file uploads.
+### Prerequisites
 
-### ☁️ Background Job Queue
-- The backend responds immediately with a `202 Accepted` status and a retrieval code once the stream is established.
-- The actual cloud upload finishes in the background. A polling endpoint tracks this background progress using pCloud’s upload progress API.
+- [Node.js](https://nodejs.org/) (v16+ recommended)
+- [MongoDB](https://www.mongodb.com/try/download/community) running locally or an Atlas URI
+- A **pCloud** account with developer API credentials
 
----
+### 1. Environment Configuration
 
-## 🚀 Getting Started
+Create a `.env` file inside the `backend/` directory:
 
-### Environment Variables
-Create a `.env` file in the `/backend` directory:
 ```env
 PORT=3000
-MONGODB_URI=mongodb://localhost:27017/pastly
-PCLOUD_AUTH_TOKEN=your_pcloud_token
-PASTE_FOLDER_ID=your_paste_folder_id
-TRANSFER_FOLDER_ID=your_transfer_folder_id
+MONGODB_URI=mongodb://127.0.0.1:27017/pastly
+PCLOUD_AUTH_TOKEN=your_pcloud_developer_auth_token
+PASTE_FOLDER_ID=your_pcloud_paste_folder_id
+TRANSFER_FOLDER_ID=your_pcloud_transfer_folder_id
 FRONTEND_URL=http://localhost:5173
 ```
 
-### Installation
-1. Install dependencies for the entire project:
-   ```bash
-   npm run build
-   ```
-2. Start the development environment:
-   - Run backend: `npm run dev --prefix backend`
-   - Run frontend: `npm run dev --prefix frontend`
+> [!TIP]
+> Retrieve folder IDs from the URL when viewing target folders in your pCloud web panel.
+
+### 2. Install Dependencies
+
+You can install all dependencies from the root directory:
+
+```bash
+# Install backend dependencies
+npm install --prefix backend
+
+# Install frontend dependencies
+npm install --prefix frontend
+```
+
+### 3. Run Locally in Development
+
+Start both the backend server and frontend Vite development server:
+
+```bash
+# Start Backend (runs on http://localhost:3000)
+npm run dev --prefix backend
+
+# Start Frontend (runs on http://localhost:5173)
+npm run dev --prefix frontend
+```
+
+---
+
+## 📡 API Reference
+
+### Paste Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/paste` | Creates a new text paste. Uploads content as a text file to pCloud. |
+| `GET` | `/api/paste/:slug` | Retrieves the content of an active text paste. |
+
+### Transfer Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/transfer` | Streams file upload from form data to pCloud. Expects `X-Progress-Hash`. |
+| `GET` | `/api/transfer/:code/status` | Lightweight verification check before redeeming. Returns file name & status. |
+| `GET` | `/api/transfer/:code` | Redeems and marks code as used. Redirects browser to file download url. |
+| `GET` | `/api/transfer/progress/:progressHash` | Proxies upload progress state direct from pCloud's server queue. |
+
+---
+
+## 🔒 Security & Expiration
+
+- **Transient Files**: Once a file transfer is successfully downloaded (redeemed), it is deleted from both pCloud and MongoDB on the next automatic cron cycle (running every 7.5 minutes).
+- **Auto Expiration**: All non-downloaded file transfers expire after **10 minutes** to keep cloud space optimized. Pastes will be expired if not opened for 10 days by anyone.
+- **Stream Termination**: If an upload is canceled mid-stream by the client, the network pipe closes immediately, stopping pCloud stream consumption and freeing memory buffers.

@@ -10,8 +10,12 @@ const cleanupExpiredPastes = async () => {
             return;
         }
         for (const paste of expiredPastes) {
-            await deleteFile(paste.fileId);
-            await paste.deleteOne();
+            try {
+                await deleteFile(paste.fileId);
+                await paste.deleteOne();
+            } catch (err) {
+                console.error(`Failed to delete paste ${paste._id} (fileId: ${paste.fileId}):`, err.message);
+            }
         }
     } catch (error) {
         console.error("Error occurred while cleaning up expired pastes : ", error);

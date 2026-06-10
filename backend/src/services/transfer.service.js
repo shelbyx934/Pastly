@@ -2,7 +2,7 @@ import { uploadFileStream, getFileDownloadLink } from './pcloud.service.js';
 import generateTransferCode from '../utils/generateTransferCode.js';
 import Transfer from '../models/transfer.model.js';
 
-export const createTransfer = async (fileStream, originalFileName,sizeInBytes) => {
+export const createTransfer = async (fileStream, originalFileName, sizeInBytes, progressHash) => {
     try {
         const folderId = process.env.TRANSFER_FOLDER_ID;
 
@@ -13,7 +13,7 @@ export const createTransfer = async (fileStream, originalFileName,sizeInBytes) =
 
         const storedFileName = `${code}_${originalFileName}`;
 
-        const fileId = await uploadFileStream(folderId, storedFileName, fileStream, sizeInBytes);
+        const fileId = await uploadFileStream(folderId, storedFileName, fileStream, sizeInBytes, progressHash);
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // expires after 10 minutes
         await Transfer.create({
             code,

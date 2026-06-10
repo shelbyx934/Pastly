@@ -1,9 +1,11 @@
 import Busboy from 'busboy';
 import { createTransfer, receiveTransfer } from '../services/transfer.service.js';
+import { getPCloudUploadProgress } from '../services/pcloud.service.js';
 import Transfer from '../models/transfer.model.js';
 
 export const createTransferController = (req, res) => {
     const contentLength = req.headers['content-length'];
+    const progressHash = req.headers['x-progress-hash'];
 
     if (!contentLength) {
         return res.status(411).json({ success: false, error: 'Content-Length header is required' });
@@ -21,7 +23,8 @@ export const createTransferController = (req, res) => {
             createTransfer(
                 fileStream,
                 info.filename,
-                contentLength
+                contentLength,
+                progressHash
             );
     });
 
@@ -69,6 +72,16 @@ export const getTransferStatusController = async (req, res) => {
             fileName: transfer.fileName,
             expiresAt: transfer.expiresAt
         });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const getTransferProgressController = async (req, res) => {
+    const { progressHash } = req.params;
+    try {
+        const progress = await getPCloudUploadProgress(progressHash);
+        res.status(200).json({ success: true, ...progress });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

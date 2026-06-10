@@ -6,9 +6,11 @@ import QRCode from "../components/QRCode";
 import StatusPollBadge from "../components/StatusPollBadge";
 import Toast from "../components/Toast";
 import TransferCodeDisplay from "../components/TransferCodeDisplay";
-import { createTransferRequest, getTransferJobStatus } from "../lib/transferApi";
+import { createTransferRequest, getTransferProgressStatus } from "../lib/transferApi";
 
 const STEP = { SELECT: "select", UPLOADING: "uploading", DONE: "done" };
+// uploadPhase: "preparing" (before bytes flow) | "uploading" (bytes in flight)
+const UPLOAD_PHASE = { PREPARING: "preparing", UPLOADING: "uploading" };
 const TABS = ["code", "link", "qr"];
 const CLOUD_POLL_MS = 1500;
 
@@ -28,20 +30,19 @@ function TransferSendPage() {
   const [codeRedeemed, setCodeRedeemed] = useState(false);
   const [toast, setToast] = useState({ open: false, title: "", message: "", variant: "success" });
 
-  // ── Phase A: browser → server ─────────────────────────────────────────────
-  const [uploadedBytes, setUploadedBytes] = useState(0);
-  const [totalBytes, setTotalBytes] = useState(0);
-  const browserPercent = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
-
-  // ── Phase B: server → pCloud ──────────────────────────────────────────────
-  const [jobId, setJobId] = useState(null);   // set when 202 arrives
-  const [pendingCode, setPendingCode] = useState(""); // code from 202, shown during Phase B
+  // ── Upload Progress State ──────────────────────────────────────────────────
+  const [uploadPhase, setUploadPhase] = useState(UPLOAD_PHASE.PREPARING);
+  const [progressHash, setProgressHash] = useState(null);
   const [cloudProgress, setCloudProgress] = useState({
     uploaded: 0,
     total: 0,
     finished: false,
     currentFile: "",
   });
+
+  // AbortController ref for cancelling the upload
+  const abortControllerRef = useRef(null);
+
   const cloudPercent = cloudProgress.total > 0
     ? Math.round((cloudProgress.uploaded / cloudProgress.total) * 100)
     : 0;
@@ -51,7 +52,7 @@ function TransferSendPage() {
 
   // ── Cloud upload polling effect ───────────────────────────────────────────
   useEffect(() => {
-    if (!jobId || step !== STEP.UPLOADING) return;
+    if (!progressHash || step !== STEP.UPLOADING) return;
 
     let cancelled = false;
     let timeoutId;
@@ -59,69 +60,94 @@ function TransferSendPage() {
     const poll = async () => {
       if (cancelled) return;
       try {
-        const data = await getTransferJobStatus(jobId);
+        const data = await getTransferProgressStatus(progressHash);
         if (cancelled) return;
 
-        if (data.phase === "done") {
-          setResult({ code: data.code, url: data.url, expiresAt: data.expiresAt });
-          setActiveTab("code");
-          setStep(STEP.DONE);
-          return; // stop polling
-        }
-
-        if (data.phase === "error") {
-          setStep(STEP.SELECT);
-          showToast("Upload failed", data.error ?? "Cloud upload failed");
-          return;
-        }
-
-        // Still uploading — update cloud progress state
         setCloudProgress({
-          uploaded: data.cloudUploaded ?? 0,
-          total: data.cloudTotal ?? 0,
-          finished: data.cloudFinished ?? false,
-          currentFile: data.currentFile ?? "",
+          uploaded: data.uploaded ?? 0,
+          total: data.total ?? 0,
+          finished: data.finished ?? false,
+          currentFile: data.currentfile ?? "",
         });
 
-        timeoutId = setTimeout(poll, CLOUD_POLL_MS);
-      } catch (err) {
+        if (!data.finished) {
+          timeoutId = setTimeout(poll, CLOUD_POLL_MS);
+        }
+      } catch {
         if (!cancelled) {
-          setStep(STEP.SELECT);
-          showToast("Upload failed", err.message);
+          timeoutId = setTimeout(poll, CLOUD_POLL_MS);
         }
       }
     };
 
-    // First poll after a short delay — give the server a moment to start
-    timeoutId = setTimeout(poll, 600);
+    timeoutId = setTimeout(poll, 1200);
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [jobId, step]);
+  }, [progressHash, step]);
+
+  // ── Cancel handler ─────────────────────────────────────────────────────────
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    setStep(STEP.SELECT);
+    setProgressHash(null);
+    setUploadPhase(UPLOAD_PHASE.PREPARING);
+    setUploadedBytes(0);
+    setTotalBytes(0);
+    setCloudProgress({ uploaded: 0, total: 0, finished: false, currentFile: "" });
+  };
+
+  // ── Keyboard shortcuts (Ctrl+Enter to upload, Escape to cancel) ────────────
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey && e.key === "Enter" && step === STEP.SELECT && file) {
+        handleUpload();
+      }
+      if (e.key === "Escape" && step === STEP.UPLOADING) {
+        handleCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, file]);
 
   // ── Upload handler ─────────────────────────────────────────────────────────
   const handleUpload = async () => {
     if (!file) return;
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setStep(STEP.UPLOADING);
-    setUploadedBytes(0);
-    setTotalBytes(0);
-    setJobId(null);
-    setPendingCode("");
+    setUploadPhase(UPLOAD_PHASE.PREPARING);
+    const hash = crypto.randomUUID();
+    setProgressHash(hash);
     setCloudProgress({ uploaded: 0, total: 0, finished: false, currentFile: "" });
 
     try {
-      const data = await createTransferRequest(file, (progressEvent) => {
-        setUploadedBytes(progressEvent.loaded ?? 0);
-        setTotalBytes(progressEvent.total ?? 0);
-      });
-      // data = { success, jobId, code }
-      // 202 received → HTTP connection closed → cloud upload running in background
-      setPendingCode(data.code ?? "");
-      setJobId(data.jobId);
+      const data = await createTransferRequest(
+        file,
+        hash,
+        (progressEvent) => {
+          // Switch to uploading phase as soon as bytes start flowing
+          if ((progressEvent.loaded ?? 0) > 0) setUploadPhase(UPLOAD_PHASE.UPLOADING);
+        },
+        controller.signal,
+      );
+      setResult({ code: data.code, url: data.url, expiresAt: data.expiresAt });
+      setActiveTab("code");
+      setStep(STEP.DONE);
     } catch (err) {
+      if (err.name === "CanceledError" || err.name === "AbortError" || err.code === "ERR_CANCELED") {
+        return;
+      }
       setStep(STEP.SELECT);
       showToast("Upload failed", err.message);
+    } finally {
+      setProgressHash(null);
+      setUploadPhase(UPLOAD_PHASE.PREPARING);
     }
   };
 
@@ -147,11 +173,8 @@ function TransferSendPage() {
     }
   };
 
-  // ── Derived state ──────────────────────────────────────────────────────────
-  // Whether the browser→server leg is still going
-  const isBrowserUploading = step === STEP.UPLOADING && jobId === null;
-  // Whether we're polling the cloud leg
-  const isCloudUploading = step === STEP.UPLOADING && jobId !== null;
+  const isPreparing = step === STEP.UPLOADING && uploadPhase === UPLOAD_PHASE.PREPARING;
+  const isUploading = step === STEP.UPLOADING && uploadPhase === UPLOAD_PHASE.UPLOADING;
 
   return (
     <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)]">
@@ -186,7 +209,12 @@ function TransferSendPage() {
               <FileDropZone file={file} onFile={setFile} onClear={() => setFile(null)} disabled={false} />
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              {file ? (
+                <p className="text-xs text-[color:var(--color-text-soft)]">
+                  Press <kbd className="rounded border border-[color:var(--color-border)] px-1.5 py-0.5 font-mono text-[11px]">Ctrl</kbd> + <kbd className="rounded border border-[color:var(--color-border)] px-1.5 py-0.5 font-mono text-[11px]">Enter</kbd> to upload
+                </p>
+              ) : <span />}
               <button
                 type="button"
                 id="send-file-btn"
@@ -210,63 +238,42 @@ function TransferSendPage() {
           <section className="animate-fade-in-up">
             <div className="flex flex-col gap-6 rounded-[32px] border border-[color:var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-8 py-10 shadow-[0_24px_60px_-36px_var(--color-shadow)]">
 
-              {/* ── Phase A: browser → server ── */}
-              {isBrowserUploading && (
+                             {/* ── Phase i: Preparing ── */}
+              {isPreparing && (
+                <div className="flex flex-col items-center gap-5 py-4">
+                  {/* Animated ring */}
+                  <div className="relative h-16 w-16">
+                    <div className="absolute inset-0 rounded-full bg-[image:var(--gradient-brand)] opacity-15" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="h-9 w-9 animate-spin text-[color:var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-[color:var(--color-text-strong)]">
+                      Preparing to upload…
+                    </p>
+                    <p className="mt-1 text-xs text-[color:var(--color-text-soft)] truncate max-w-xs">
+                      {file?.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Phase ii: Uploading (pCloud progress) ── */}
+              {isUploading && (
                 <>
-                  {/* Header */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
-                      Step 1 of 2 — Sending to server
+                      Uploading to cloud storage
                     </p>
                     <p className="mt-1 font-medium text-[color:var(--color-text-strong)] truncate">
                       {file?.name}
                     </p>
                   </div>
 
-                  {/* Browser upload progress bar */}
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs text-[color:var(--color-text-soft)]">
-                      <span>{formatBytes(uploadedBytes)} / {formatBytes(totalBytes)}</span>
-                      <span className="font-mono font-semibold text-[color:var(--color-text-strong)]">
-                        {browserPercent}%
-                      </span>
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--color-surface-muted)]">
-                      <div
-                        className="h-full rounded-full bg-[image:var(--gradient-brand)] transition-all duration-200 ease-out"
-                        style={{ width: `${browserPercent}%` }}
-                        role="progressbar"
-                        aria-valuenow={browserPercent}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label="Browser upload progress"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-sm text-[color:var(--color-text-soft)]">
-                    <svg className="h-4 w-4 shrink-0 animate-spin text-[color:var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    Transferring your file to the server…
-                  </div>
-                </>
-              )}
-
-              {/* ── Phase B: server → pCloud ── */}
-              {isCloudUploading && (
-                <>
-                  {/* Header */}
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
-                      Step 2 of 2 — Uploading to cloud
-                    </p>
-                    <p className="mt-1 font-medium text-[color:var(--color-text-strong)] truncate">
-                      {cloudProgress.currentFile || file?.name}
-                    </p>
-                  </div>
-
-                  {/* Cloud upload progress bar */}
+                  {/* pCloud progress bar */}
                   <div>
                     <div className="mb-2 flex items-center justify-between text-xs text-[color:var(--color-text-soft)]">
                       {cloudProgress.total > 0 ? (
@@ -278,7 +285,6 @@ function TransferSendPage() {
                         {cloudProgress.total > 0 ? `${cloudPercent}%` : "—"}
                       </span>
                     </div>
-
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-[color:var(--color-surface-muted)]">
                       {cloudProgress.total > 0 ? (
                         <div
@@ -291,31 +297,36 @@ function TransferSendPage() {
                           aria-label="Cloud upload progress"
                         />
                       ) : (
-                        /* Indeterminate shimmer while waiting for pCloud to start */
                         <div className="h-full w-1/3 animate-[shimmer_1.5s_ease-in-out_infinite] rounded-full bg-[image:var(--gradient-brand)] opacity-70" />
                       )}
                     </div>
                   </div>
 
-                  {/* Info row */}
                   <div className="flex items-center gap-3 text-sm text-[color:var(--color-text-soft)]">
                     <svg className="h-4 w-4 shrink-0 animate-spin text-[color:var(--color-accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
-                    Uploading to cloud storage — you can safely close this tab.
-                  </div>
-
-                  {/* "Safe to close" notice */}
-                  <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-4 py-3 text-xs text-[color:var(--color-text-soft)] leading-5">
-                    💡 <strong className="text-[color:var(--color-text-strong)]">Your code is already ready:</strong>{" "}
-                    {pendingCode && (
-                      <span className="font-mono font-bold tracking-widest text-[color:var(--color-text-strong)]">{pendingCode}</span>
-                    )}
-                    {" "}The file will finish uploading even if you close this window.
-                    Once done, the receiver can use the code above.
+                    Streaming directly to cloud storage…
                   </div>
                 </>
               )}
+
+              {/* ── Cancel button — always visible while uploading ── */}
+              <div className="flex justify-center">
+                <button
+                  id="cancel-upload-btn"
+                  type="button"
+                  onClick={handleCancel}
+                  className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-2 text-xs font-medium text-[color:var(--color-text-soft)] transition-all duration-200 hover:border-rose-400 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                >
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  Cancel upload
+                  <span className="ml-0.5 opacity-50 text-[10px]">(Esc)</span>
+                </button>
+              </div>
+
             </div>
           </section>
         )}
@@ -457,7 +468,7 @@ function TransferSendPage() {
               <button
                 type="button"
                 id="send-another-btn"
-                onClick={() => { setStep(STEP.SELECT); setFile(null); setResult(null); setJobId(null); setPendingCode(""); setCodeRedeemed(false); }}
+                onClick={() => { setStep(STEP.SELECT); setFile(null); setResult(null); setCodeRedeemed(false); }}
                 className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-6 py-3 text-sm font-medium text-[color:var(--color-text-strong)] hover:-translate-y-0.5 hover:border-[color:var(--color-border-strong)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
               >
                 Send another file
