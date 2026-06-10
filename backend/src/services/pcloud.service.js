@@ -2,7 +2,7 @@ import FD from "form-data";
 import axios from 'axios';
 import crypto from 'crypto';
 
-const BASE_URL = 'https://api.pcloud.com';
+const BASE_URL = 'https://apitok2.pcloud.com';
 
 export const uploadTextFile = async (folderid, fileName, content) => {
     try {
@@ -171,33 +171,76 @@ export const getPCloudUploadProgress = async (progressHash) => {
 
 // get download link for a file
 
+// [OLD] — getfilelink approach (commented out)
+// export const getFileDownloadLink = async (fileData) => {
+//     try {
+//         const params = new URLSearchParams({
+//             auth: process.env.PCLOUD_AUTH_TOKEN,
+//             fileid: fileData.fileId,
+//             forcedownload: 1
+//         });
+//         const response = await fetch(`${BASE_URL}/getfilelink?${params.toString()}`, {
+//             method: 'GET',
+//             headers: {
+//                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
+//             }
+//         });
+//         if (!response.ok) {
+//             throw new Error(`HTTP Error : Getting File Download Link : ${response.status}`);
+//         }
+//         const jsonResponse = await response.json();
+//         const host = jsonResponse["hosts"][0];
+//         const originalFilePath = jsonResponse["path"];
+        const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
+//         return `https://${host}/${downloadFilePath}`;
+//     } catch (error) {
+//         throw new Error(`Failed to get file download link: ${error.message}`);
+//     }
+// };
+
 export const getFileDownloadLink = async (fileData) => {
     try {
-        const params = new URLSearchParams({
+        const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36';
+
+        // Step i: Get a public share link code for the file
+        const pubLinkParams = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
             fileid: fileData.fileId,
-            forcedownload: 1
         });
-        // https://apitok2.pcloud.com/getfilelink?fileid=89048648230&forcedownload=1&auth=IkNbXVZhyjw7ZIxBHLLh5copNRv4wVj8YbhO85IFk
-        console.log(`${BASE_URL}/getfilelink?${params.toString()}`);
-        const response = await fetch(`${BASE_URL}/getfilelink?${params.toString()}`, {
-            method: 'GET',
-            headers: {
-                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
-            }
+        const pubLinkResponse = await fetch(`${BASE_URL}/getfilepublink?${pubLinkParams.toString()}`, {
+            headers: { 'user-agent': UA }
         });
-        if (!response.ok) {
-            throw new Error(`HTTP Error : Getting File Download Link : ${response.status}`);
+        if (!pubLinkResponse.ok) {
+            throw new Error(`HTTP Error : getfilepublink : ${pubLinkResponse.status}`);
+        }
+        const pubLinkJson = await pubLinkResponse.json();
+        if (pubLinkJson.result !== 0) {
+            throw new Error(`pCloud error on getfilepublink: ${pubLinkJson.result}`);
+        }
+        const code = pubLinkJson.code;
+
+        // Step ii: Resolve the CDN download URL using the public code
+        const dlParams = new URLSearchParams({
+            fileid: fileData.fileId,
+            code,
+            linkpassword: '',
+            forcedownload: 1,
+        });
+        const dlResponse = await fetch(`${BASE_URL}/getpublinkdownload?${dlParams.toString()}`, {
+            headers: { 'user-agent': UA }
+        });
+        if (!dlResponse.ok) {
+            throw new Error(`HTTP Error : getpublinkdownload : ${dlResponse.status}`);
+        }
+        const dlJson = await dlResponse.json();
+        if (dlJson.result !== 0) {
+            throw new Error(`pCloud error on getpublinkdownload: ${dlJson.result}`);
         }
 
-        const jsonResponse = await response.json();
-        const host = jsonResponse["hosts"][0];
-        console.log(jsonResponse);
-        const originalFilePath = jsonResponse["path"]
+        const host = dlJson.hosts[0];
+        const path = dlJson.path;
 
-        const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
-        
-        return `https://${host}/${downloadFilePath}`;
+        return `https://${host}${path}`;
     } catch (error) {
         throw new Error(`Failed to get file download link: ${error.message}`);
     }

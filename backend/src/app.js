@@ -18,6 +18,5 @@ app.use(express.json());
 app.use('/api', pasteRouter);
 app.use('/api', transferRouter);
 app.use('/', transferRouter);
-app.get('/getServer', testPCloudApi);
 
 export default app;
