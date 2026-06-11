@@ -169,51 +169,10 @@ export const getPCloudUploadProgress = async (progressHash) => {
     }
 };
 
-// get download link for a file
-
-// [OLD] — getfilelink approach (commented out)
-// export const getFileDownloadLink = async (fileData) => {
-//     try {
-//         const params = new URLSearchParams({
-//             auth: process.env.PCLOUD_AUTH_TOKEN,
-//             fileid: fileData.fileId,
-//             forcedownload: 1
-//         });
-//         const response = await fetch(`${BASE_URL}/getfilelink?${params.toString()}`, {
-//             method: 'GET',
-//             headers: {
-//                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
-//             }
-//         });
-//         if (!response.ok) {
-//             throw new Error(`HTTP Error : Getting File Download Link : ${response.status}`);
-//         }
-//         const jsonResponse = await response.json();
-//         const host = jsonResponse["hosts"][0];
-//         const originalFilePath = jsonResponse["path"];
-//         const downloadFilePath = originalFilePath.split('/')[1] + '/' + fileData.fileName;
-//         const fileLink = `https://${host}/${downloadFilePath}`;
-//         console.log(`Generated download link: ${fileLink}`);
-//         // print response code for filelink using fetch
-//         const fileResponse = await fetch(fileLink, {
-//             method: 'GET',
-//             headers: {
-//                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
-//             }
-//         });
-//         console.log(`File link response code: ${fileResponse.status}`);
-
-//         return `https://${host}/${downloadFilePath}`;
-//     } catch (error) {
-//         throw new Error(`Failed to get file download link: ${error.message}`);
-//     }
-// };
-
 export const getFileDownloadLink = async (fileData) => {
     try {
         const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36';
 
-        // Step i: Get a public share link code for the file
         const pubLinkParams = new URLSearchParams({
             auth: process.env.PCLOUD_AUTH_TOKEN,
             fileid: fileData.fileId,
@@ -228,45 +187,8 @@ export const getFileDownloadLink = async (fileData) => {
         if (pubLinkJson.result !== 0) {
             throw new Error(`pCloud error on getfilepublink: ${pubLinkJson.result}`);
         }
-        // const code = pubLinkJson.code;
-        const codeLink = pubLinkJson.link;
-        // use get request on this link and print status code and text response 
 
-        const codeResponse = await fetch(codeLink, {
-            headers: { 'user-agent': UA }
-        });
-        // if (!codeResponse.ok) {
-        //     throw new Error(`HTTP Error : Fetching Public Link : ${codeResponse.status}`);
-        // }
-        const codeText = await codeResponse.text();
-        console.log(`Public link response status: ${codeResponse.status}`);
-        console.log(`Public link response text: ${codeText}`);
-
-        return codeLink;
-
-        // Step ii: Resolve the CDN download URL using the public code
-        // const dlParams = new URLSearchParams({
-        //     fileid: fileData.fileId,
-        //     code,
-        //     linkpassword: '',
-        //     forcedownload: 1,
-        // });
-
-        // const dlResponse = await fetch(`${BASE_URL}/getpublinkdownload?${dlParams.toString()}`, {
-        //     headers: { 'user-agent': UA }
-        // });
-        // if (!dlResponse.ok) {
-        //     throw new Error(`HTTP Error : getpublinkdownload : ${dlResponse.status}`);
-        // }
-        // const dlJson = await dlResponse.json();
-        // if (dlJson.result !== 0) {
-        //     throw new Error(`pCloud error on getpublinkdownload: ${dlJson.result}`);
-        // }
-
-        // const host = dlJson.hosts[0];
-        // const path = dlJson.path;
-
-        // return `https://${host}${path}`;
+        return pubLinkJson.link;
     } catch (error) {
         throw new Error(`Failed to get file download link: ${error.message}`);
     }

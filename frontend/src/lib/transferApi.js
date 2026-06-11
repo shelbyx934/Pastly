@@ -59,11 +59,30 @@ export async function getTransferProgressStatus(progressHash) {
   }
 }
 
-/** Redeem a transfer code — returns { url } which is a direct pCloud download link */
+/** Redeem a transfer code — resolves the public pCloud link and returns the final direct download link with the code prefix stripped */
 export async function receiveTransferRequest(code) {
   try {
     const response = await api.get(`/transfer/${code}`);
-    return response.data; // { success, url }
+    const publicUrl = response.data.url;
+
+    // Fetch the public page HTML directly in frontend using Axios
+    const htmlResponse = await axios.get(publicUrl);
+    const htmlText = typeof htmlResponse.data === "string" ? htmlResponse.data : JSON.stringify(htmlResponse.data);
+
+    const match = htmlText.match(/"downloadlink"\s*:\s*"([^"]+)"/);
+    if (!match || !match[1]) {
+      throw new Error("Could not find the download link in pCloud response.");
+    }
+
+    // Clean slashes and strip the code_ prefix
+    let cleanUrl = match[1].replace(/\\\//g, "/");
+    const codePrefixRegex = new RegExp(`/${code}_`, "i");
+    cleanUrl = cleanUrl.replace(codePrefixRegex, "/");
+
+    return {
+      ...response.data,
+      url: cleanUrl,
+    };
   } catch (error) {
     throw new Error(getErrorMessage(error, "Unable to fetch file."), {
       cause: error,
