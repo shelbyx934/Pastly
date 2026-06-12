@@ -29,7 +29,7 @@ Unlike typical file-sharing tools that buffer entire uploads to local server dis
 - **⚡ Fast Code Pastes**: Share formatted code or plain text instantly upto 10MB and simple click-to-copy with a short link.
 - **📦 Zero-Disk File Transfers**: Securely transfer files up to 1GB. Uploads stream straight through Node to pCloud without ever touching the server's hard drive.
 - **🔄 Real-time Cloud Progress**: Rather than relying on simple browser-side upload calculations, Pastly polls pCloud's actual server-side progress endpoint, providing true, accurate progress states.
-- **🛡️ Single-Redeem Verification**: File transfers are single-use. The code is checked dynamically on first load, prompting the receiver with a confirmation screen before redeeming the link and marking the transfer as downloaded.
+- **🛡️ Client-Side CDN Resolution**: File transfers are single-use. The code is verified on first load and redeemed. To bypass pCloud's IP-session locks, the frontend fetches the pCloud public share link returned by the backend, extracts the direct CDN link from the HTML, strips the transient transfer-code prefix, and triggers the download redirect directly from the client.
 - **⏳ Automatic Cleanup**: Scheduled background cron tasks run every 7.5 minutes to clean up expired pastes, redeemed transfers, and delete associated cloud storage assets.
 - **🎨 Modern UX/UI**: Elegant glassmorphism interface with custom dark/light theme options, file drop zone micro-animations, keyboard shortcuts (`Ctrl + Enter` to upload, `Escape` to cancel), and quick manual/URL download mechanisms.
 
@@ -145,7 +145,7 @@ npm run dev --prefix frontend
 | :--- | :--- | :--- |
 | `POST` | `/api/transfer` | Streams file upload from form data to pCloud. Expects `X-Progress-Hash`. |
 | `GET` | `/api/transfer/:code/status` | Lightweight verification check before redeeming. Returns file name & status. |
-| `GET` | `/api/transfer/:code` | Redeems and marks code as used. Redirects browser to file download url. |
+| `GET` | `/api/transfer/:code` | Redeems the transfer, marks the code as used, and returns the pCloud public share link. |
 | `GET` | `/api/transfer/progress/:progressHash` | Proxies upload progress state direct from pCloud's server queue. |
 
 ---
